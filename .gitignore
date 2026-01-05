@@ -24,6 +24,7 @@ db.sqlite3
 *.idea/
 *.vscode/
 
-mysite/__pycahce__/
+mysite/__pycache__/
+hotel/__pychache__/
 staticfiles/
 media/
