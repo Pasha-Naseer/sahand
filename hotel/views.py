@@ -235,11 +235,17 @@ class ReservationView(View):
                         messages.error(request, "نداخل بازه زمانی!")
                         return redirect('hotel:reservation', room_id)
 
-                Reservation.objects.create(room=room, phone_number=phone_number, first_name=first_name, last_name=last_name,
-                                           reservation_date_start=reservation_date_start,
-                                           reservation_date_end=reservation_date_end, user=request.user)
+                request.session['pending_reservation'] = {
+                    "room_id": room.id,
+                    "phone_number": phone_number,
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "reservation_date_start": reservation_date_start.isoformat(),
+                    "reservation_date_end": reservation_date_end.isoformat(),
+                }
 
-                return render(request, 'hotel/reservation_success.html', {})
+                return redirect('hotel:checkout')
+
 
             messages.error(request, 'خطایی در فرایند ثبت رزرو ایجاد شد')
             return redirect('hotel:reservation', room_id)
@@ -442,3 +448,69 @@ def weblog_detail(request, weblog_id):
         'weblog': weblog,
     }
     return render(request, 'hotel/weblog_detail.html', context)
+
+
+class CheckoutView(View):
+
+    def get(self, request):
+        # if 'pending_reservation' not in request.session:
+        #     messages.error(request, "رزروی برای پرداخت وجود ندارد.")
+        #     return redirect('hotel:index')
+        #
+        # return render(request, 'hotel/checkout.html')
+
+        if 'pending_reservation' not in request.session:
+            messages.error(request, "رزروی برای پرداخت وجود ندارد.")
+            return redirect('hotel:index')
+
+        data = request.session['pending_reservation']
+
+        room = Room.objects.get(id=data['room_id'])
+
+
+        start = date.fromisoformat(data['reservation_date_start'])
+        end = date.fromisoformat(data['reservation_date_end'])
+
+
+        reservation = Reservation(
+            room=room,
+            reservation_date_start=start,
+            reservation_date_end=end
+        )
+
+        context = {
+            "reservation": reservation
+        }
+
+        return render(request, 'hotel/checkout.html', context)
+
+    def post(self, request):
+        if 'pending_reservation' not in request.session:
+            messages.error(request, "رزروی برای پرداخت وجود ندارد.")
+            return redirect('hotel:index')
+
+        receipt = request.FILES.get('receipt')
+
+        if not receipt:
+            messages.error(request, "لطفاً تصویر رسید را بارگذاری کنید.")
+            return redirect('hotel:checkout')
+
+        data = request.session['pending_reservation']
+
+        room = Room.objects.get(id=data['room_id'])
+
+        reservation = Reservation.objects.create(
+            room=room,
+            phone_number=data['phone_number'],
+            first_name=data['first_name'],
+            last_name=data['last_name'],
+            reservation_date_start=date.fromisoformat(data['reservation_date_start']),
+            reservation_date_end=date.fromisoformat(data['reservation_date_end']),
+            user=request.user,
+            receipt=receipt  # <-- you must add this field
+        )
+
+        # Clear session
+        del request.session['pending_reservation']
+
+        return render(request, 'hotel/reservation_success.html')

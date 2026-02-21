@@ -51,6 +51,7 @@ class Reservation(models.Model):
     last_name = models.CharField(max_length=200, null=True)
     reservation_date_start = models.DateField()
     reservation_date_end = models.DateField()
+    receipt = models.ImageField(upload_to='receipts/', null=True, blank=True)
     status = models.CharField(max_length=1, choices=STATUS_CHOICES, default='P', null=True)
 
     def total_days(self):

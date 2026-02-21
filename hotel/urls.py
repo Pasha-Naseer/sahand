@@ -19,7 +19,8 @@ urlpatterns = [
     # path('update_info/', views.update_info, name='update_info'),
     path('update_password', views.update_password, name='update_password'),
     path('weblog', views.weblog, name='weblog'),
-    path('weblog/<int:weblog_id>/', views.weblog_detail, name='weblog_detail')
+    path('weblog/<int:weblog_id>/', views.weblog_detail, name='weblog_detail'),
+    path('checkout/', views.CheckoutView.as_view(), name='checkout'),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
